@@ -5,8 +5,8 @@ import os
 from datetime import datetime
 
 # TELEGRAM SETTINGS
-BOT_TOKEN = "8649870157:AAHMtFio4g4OOr76yHLqxPEm23AUJwe171E"
-CHAT_ID = "5442229941"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 # JOB ROLES
 roles = [
@@ -118,6 +118,7 @@ if new_jobs:
     combined.to_csv("sent_jobs.csv",index=False)
 
 print("Job alerts sent successfully.")
+
 
 
 
