@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: "*/15 * * * *"
   workflow_dispatch:
+
 jobs:
   run-script:
     runs-on: ubuntu-latest
@@ -21,9 +22,9 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-     - name: Run scraper
-  run: |
-    python job_scraper.py
-  env:
-    BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-    CHAT_ID: ${{ secrets.CHAT_ID }} 
+      - name: Run scraper
+        run: |
+          python job_scraper.py
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
