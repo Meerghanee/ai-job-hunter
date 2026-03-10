@@ -5,31 +5,42 @@ import os
 from datetime import datetime
 from bs4 import BeautifulSoup
 
-
 # TELEGRAM SETTINGS
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-print("Testing Telegram connection...")
-
-requests.post(
-    f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-    data={"chat_id": CHAT_ID, "text": "AI Job Hunter is running"}
-)
-
 print("BOT TOKEN:", BOT_TOKEN)
 print("CHAT ID:", CHAT_ID)
 
+def send_telegram(message):
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            data={"chat_id": CHAT_ID, "text": message},
+            timeout=10
+        )
+    except:
+        pass
 
 
-# WELLFOUND STARTUP SCRAPER
+# TEST TELEGRAM
+send_telegram("AI Job Hunter is running")
+
+
+headers = {
+    "User-Agent": "Mozilla/5.0"
+}
+
+
+# WELLFOUND SCRAPER
 def scrape_wellfound_jobs():
 
-    url = "https://wellfound.com/jobs"
     jobs = []
 
     try:
-        response = requests.get(url)
+        url = "https://wellfound.com/jobs"
+
+        response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
 
         listings = soup.find_all("a", {"data-test": "job-link"})
@@ -55,16 +66,17 @@ def scrape_wellfound_jobs():
 # NAUKRI SCRAPER
 def scrape_naukri_jobs():
 
-    url = "https://www.naukri.com/data-analyst-jobs-in-india"
     jobs = []
 
     try:
-        response = requests.get(url)
+        url = "https://www.naukri.com/data-analyst-jobs-in-india"
+
+        response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
 
         listings = soup.find_all("a", class_="title")
 
-        for job in listings[:20]:
+        for job in listings[:15]:
 
             title = job.text.strip()
             link = job.get("href")
@@ -82,19 +94,20 @@ def scrape_naukri_jobs():
     return jobs
 
 
-# GREENHOUSE ATS SCRAPER
+# GREENHOUSE SCRAPER
 def scrape_greenhouse_jobs():
 
-    url = "https://boards.greenhouse.io/embed/job_board?for=stripe"
     jobs = []
 
     try:
-        response = requests.get(url)
+        url = "https://boards.greenhouse.io/embed/job_board?for=stripe"
+
+        response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
 
         listings = soup.find_all("a")
 
-        for job in listings[:20]:
+        for job in listings[:15]:
 
             title = job.text.strip()
             link = job.get("href")
@@ -114,19 +127,20 @@ def scrape_greenhouse_jobs():
     return jobs
 
 
-# WORKDAY ATS SCRAPER
+# WORKDAY SCRAPER
 def scrape_workday_jobs():
 
-    url = "https://deloitte.wd1.myworkdayjobs.com/External"
     jobs = []
 
     try:
-        response = requests.get(url)
+        url = "https://deloitte.wd1.myworkdayjobs.com/External"
+
+        response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
 
         listings = soup.find_all("a")
 
-        for job in listings[:20]:
+        for job in listings[:15]:
 
             title = job.text.strip()
             link = job.get("href")
@@ -157,80 +171,65 @@ roles = [
     "esg analyst",
     "corporate finance analyst",
     "risk analyst",
-    "credit analyst",
-    "valuation analyst",
-    "finance associate",
-    "data science intern",
-    "business analyst intern"
+    "credit analyst"
 ]
 
 
-# LOCATION
 location = "India"
 
-print("Starting AI Job Hunter for India...")
+print("Starting AI Job Hunter...")
+
 
 all_jobs = []
 
-
-# SCRAPE MAIN JOB PORTALS
 for role in roles:
 
-    print(f"Searching for: {role} in India")
+    try:
 
-    jobs = scrape_jobs(
-        site_name=["linkedin", "indeed", "glassdoor"],
-        search_term=role,
-        location=location,
-        results_wanted=80,
-        hours_old=2
-    )
+        print("Searching:", role)
 
-    all_jobs.append(jobs)
+        jobs = scrape_jobs(
+            site_name=["linkedin", "indeed"],   # removed glassdoor
+            search_term=role,
+            location=location,
+            results_wanted=60,
+            hours_old=2
+        )
 
+        if not jobs.empty:
+            all_jobs.append(jobs)
 
-# SAFER CONCAT
-jobs_df = pd.concat([df for df in all_jobs if not df.empty])
-
-
-# EXPERIENCE FILTER
-exp_keywords = [
-    "entry",
-    "junior",
-    "associate",
-    "intern",
-    "trainee",
-    "0 year",
-    "0-1",
-    "0-2",
-    "0-3",
-    "fresher"
-]
-
-filtered_jobs = jobs_df
+    except:
+        pass
 
 
-# CLEAN DASHBOARD
-dashboard = pd.DataFrame({
-    "Company": filtered_jobs["company"],
-    "Job Role": filtered_jobs["title"],
-    "Job Level": filtered_jobs["title"],
-    "Date Posted": datetime.now().date(),
-    "Time Posted": datetime.now().strftime("%H:%M"),
-    "Apply Link": filtered_jobs["job_url"],
-    "Source": filtered_jobs["site"]
-})
+# CONCAT JOBS
+if all_jobs:
+    jobs_df = pd.concat(all_jobs)
+else:
+    jobs_df = pd.DataFrame()
 
 
-# REMOVE DUPLICATES
+if not jobs_df.empty:
+
+    dashboard = pd.DataFrame({
+        "Company": jobs_df["company"],
+        "Job Role": jobs_df["title"],
+        "Date Posted": datetime.now().date(),
+        "Apply Link": jobs_df["job_url"],
+        "Source": jobs_df["site"]
+    })
+
+else:
+    dashboard = pd.DataFrame()
+
+
 dashboard.drop_duplicates(subset="Apply Link", inplace=True)
 
-
-# SAVE EXCEL DASHBOARD
 dashboard.to_excel("AI_JOB_DASHBOARD.xlsx", index=False)
 
 
-# LOAD SENT JOBS
+# LOAD OLD JOBS
 if os.path.exists("sent_jobs.csv"):
     old = pd.read_csv("sent_jobs.csv")
     sent_links = set(old["Apply Link"])
@@ -241,111 +240,52 @@ else:
 new_jobs = []
 
 
-# TELEGRAM ALERTS FROM MAIN PORTALS
+# TELEGRAM ALERTS
 for index, row in dashboard.iterrows():
 
-    if row["Apply Link"] not in sent_links:
+    link = row["Apply Link"]
+
+    if link not in sent_links:
 
         message = f"""
 New Job Alert
 
 Company: {row['Company']}
 Role: {row['Job Role']}
-Apply: {row['Apply Link']}
+Apply: {link}
 Source: {row['Source']}
 """
 
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-
-        requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+        send_telegram(message)
 
         new_jobs.append(row)
 
 
-# WELLFOUND JOBS
-for job in scrape_wellfound_jobs():
+# EXTRA SOURCES
+extra_jobs = []
 
-    if job["Apply Link"] not in sent_links:
+extra_jobs.extend(scrape_wellfound_jobs())
+extra_jobs.extend(scrape_naukri_jobs())
+extra_jobs.extend(scrape_greenhouse_jobs())
+extra_jobs.extend(scrape_workday_jobs())
+
+
+for job in extra_jobs:
+
+    link = job["Apply Link"]
+
+    if link not in sent_links:
 
         message = f"""
-New Startup Job
+New Job Alert
 
 Company: {job['Company']}
 Role: {job['Job Role']}
-Apply: {job['Apply Link']}
+Apply: {link}
 Source: {job['Source']}
 """
 
-        requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            data={"chat_id": CHAT_ID, "text": message}
-        )
-
-        new_jobs.append(job)
-
-
-# NAUKRI JOBS
-for job in scrape_naukri_jobs():
-
-    if job["Apply Link"] not in sent_links:
-
-        message = f"""
-New Job (Naukri)
-
-Company: {job['Company']}
-Role: {job['Job Role']}
-Apply: {job['Apply Link']}
-Source: {job['Source']}
-"""
-
-        requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            data={"chat_id": CHAT_ID, "text": message}
-        )
-
-        new_jobs.append(job)
-
-
-# GREENHOUSE JOBS
-for job in scrape_greenhouse_jobs():
-
-    if job["Apply Link"] not in sent_links:
-
-        message = f"""
-New Startup Job (Greenhouse)
-
-Company: {job['Company']}
-Role: {job['Job Role']}
-Apply: {job['Apply Link']}
-Source: {job['Source']}
-"""
-
-        requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            data={"chat_id": CHAT_ID, "text": message}
-        )
-
-        new_jobs.append(job)
-
-
-# WORKDAY JOBS
-for job in scrape_workday_jobs():
-
-    if job["Apply Link"] not in sent_links:
-
-        message = f"""
-New Job (Workday)
-
-Company: {job['Company']}
-Role: {job['Job Role']}
-Apply: {job['Apply Link']}
-Source: {job['Source']}
-"""
-
-        requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            data={"chat_id": CHAT_ID, "text": message}
-        )
+        send_telegram(message)
 
         new_jobs.append(job)
 
@@ -365,7 +305,3 @@ if new_jobs:
 
 
 print("Job alerts sent successfully.")
-
-
-
-
