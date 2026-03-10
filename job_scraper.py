@@ -196,9 +196,7 @@ exp_keywords = [
     "fresher"
 ]
 
-filtered_jobs = jobs_df[
-    jobs_df["title"].str.lower().str.contains("|".join(exp_keywords), na=False)
-]
+filtered_jobs = jobs_df
 
 
 # CLEAN DASHBOARD
@@ -356,3 +354,4 @@ if new_jobs:
 
 
 print("Job alerts sent successfully.")
+
