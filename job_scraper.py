@@ -41,6 +41,37 @@ def scrape_wellfound_jobs():
     return jobs
 
 
+# NAUKRI SCRAPER
+def scrape_naukri_jobs():
+
+    url = "https://www.naukri.com/data-analyst-jobs-in-india"
+    jobs = []
+
+    try:
+
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        listings = soup.find_all("a", class_="title")
+
+        for job in listings[:20]:
+
+            title = job.text.strip()
+            link = job.get("href")
+
+            jobs.append({
+                "Company": "Various",
+                "Job Role": title,
+                "Apply Link": link,
+                "Source": "Naukri"
+            })
+
+    except:
+        pass
+
+    return jobs
+
+
 # JOB ROLES
 roles = [
     "data analyst",
@@ -122,7 +153,7 @@ dashboard = pd.DataFrame({
 dashboard.drop_duplicates(subset="Apply Link", inplace=True)
 
 
-# SAVE EXCEL DASHBOARD (cloud compatible)
+# SAVE EXCEL DASHBOARD
 dashboard.to_excel("AI_JOB_DASHBOARD.xlsx", index=False)
 
 
@@ -180,12 +211,32 @@ Source: {job['Source']}
 
         requests.post(url, data={"chat_id": CHAT_ID, "text": message})
 
-        new_jobs.append({
-            "Company": job["Company"],
-            "Job Role": job["Job Role"],
-            "Apply Link": job["Apply Link"],
-            "Source": job["Source"]
-        })
+        new_jobs.append(job)
+
+
+# SCRAPE NAUKRI JOBS
+naukri_jobs = scrape_naukri_jobs()
+
+for job in naukri_jobs:
+
+    link = job["Apply Link"]
+
+    if link not in sent_links:
+
+        message = f"""
+New Job (Naukri)
+
+Company: {job['Company']}
+Role: {job['Job Role']}
+Apply: {job['Apply Link']}
+Source: {job['Source']}
+"""
+
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+        requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+
+        new_jobs.append(job)
 
 
 # SAVE NEW JOBS
