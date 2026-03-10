@@ -10,8 +10,16 @@ from bs4 import BeautifulSoup
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
+print("Testing Telegram connection...")
+
+requests.post(
+    f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+    data={"chat_id": CHAT_ID, "text": "AI Job Hunter is running"}
+)
+
 print("BOT TOKEN:", BOT_TOKEN)
 print("CHAT ID:", CHAT_ID)
+
 
 
 # WELLFOUND STARTUP SCRAPER
@@ -357,6 +365,7 @@ if new_jobs:
 
 
 print("Job alerts sent successfully.")
+
 
 
 
