@@ -3,10 +3,43 @@ import pandas as pd
 import requests
 import os
 from datetime import datetime
+from bs4 import BeautifulSoup
+
 
 # TELEGRAM SETTINGS
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
+
+
+# WELLFOUND STARTUP SCRAPER
+def scrape_wellfound_jobs():
+
+    url = "https://wellfound.com/jobs"
+    jobs = []
+
+    try:
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        listings = soup.find_all("a", {"data-test": "job-link"})
+
+        for job in listings[:20]:
+
+            title = job.text.strip()
+            link = "https://wellfound.com" + job.get("href")
+
+            jobs.append({
+                "Company": "Startup",
+                "Job Role": title,
+                "Apply Link": link,
+                "Source": "Wellfound"
+            })
+
+    except:
+        pass
+
+    return jobs
+
 
 # JOB ROLES
 roles = [
@@ -26,13 +59,15 @@ roles = [
     "business analyst intern"
 ]
 
-# LOCATION (INDIA ONLY)
+
+# LOCATION
 location = "India"
 
 print("Starting AI Job Hunter for India...")
 
 all_jobs = []
 
+# SCRAPE MAIN JOB PORTALS
 for role in roles:
 
     print(f"Searching for: {role} in India")
@@ -47,7 +82,10 @@ for role in roles:
 
     all_jobs.append(jobs)
 
-jobs_df = pd.concat(all_jobs)
+
+# SAFER CONCAT
+jobs_df = pd.concat([df for df in all_jobs if not df.empty])
+
 
 # EXPERIENCE FILTER
 exp_keywords = [
@@ -67,6 +105,7 @@ filtered_jobs = jobs_df[
     jobs_df["title"].str.lower().str.contains("|".join(exp_keywords), na=False)
 ]
 
+
 # CLEAN DASHBOARD
 dashboard = pd.DataFrame({
     "Company": filtered_jobs["company"],
@@ -78,11 +117,14 @@ dashboard = pd.DataFrame({
     "Source": filtered_jobs["site"]
 })
 
+
 # REMOVE DUPLICATES
 dashboard.drop_duplicates(subset="Apply Link", inplace=True)
 
-# SAVE EXCEL DASHBOARD
-dashboard.to_excel(r"C:\Users\meerg\Desktop\AI_JOB_DASHBOARD.xlsx", index=False)
+
+# SAVE EXCEL DASHBOARD (cloud compatible)
+dashboard.to_excel("AI_JOB_DASHBOARD.xlsx", index=False)
+
 
 # LOAD SENT JOBS
 if os.path.exists("sent_jobs.csv"):
@@ -91,44 +133,73 @@ if os.path.exists("sent_jobs.csv"):
 else:
     sent_links = set()
 
+
 new_jobs = []
 
-# SEND TELEGRAM ALERTS
-for index,row in dashboard.iterrows():
+
+# SEND TELEGRAM ALERTS FROM MAIN PORTALS
+for index, row in dashboard.iterrows():
 
     if row["Apply Link"] not in sent_links:
 
-        message=f"""
+        message = f"""
 New Job Alert
 
 Company: {row['Company']}
 Role: {row['Job Role']}
 Apply: {row['Apply Link']}
+Source: {row['Source']}
 """
 
-        url=f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
-        requests.post(url,data={"chat_id":CHAT_ID,"text":message})
+        requests.post(url, data={"chat_id": CHAT_ID, "text": message})
 
         new_jobs.append(row)
+
+
+# SCRAPE WELLFOUND STARTUP JOBS
+wellfound_jobs = scrape_wellfound_jobs()
+
+for job in wellfound_jobs:
+
+    link = job["Apply Link"]
+
+    if link not in sent_links:
+
+        message = f"""
+New Startup Job
+
+Company: {job['Company']}
+Role: {job['Job Role']}
+Apply: {job['Apply Link']}
+Source: {job['Source']}
+"""
+
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+        requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+
+        new_jobs.append({
+            "Company": job["Company"],
+            "Job Role": job["Job Role"],
+            "Apply Link": job["Apply Link"],
+            "Source": job["Source"]
+        })
+
 
 # SAVE NEW JOBS
 if new_jobs:
 
-    new_df=pd.DataFrame(new_jobs)
+    new_df = pd.DataFrame(new_jobs)
 
     if os.path.exists("sent_jobs.csv"):
-        old_df=pd.read_csv("sent_jobs.csv")
-        combined=pd.concat([old_df,new_df])
+        old_df = pd.read_csv("sent_jobs.csv")
+        combined = pd.concat([old_df, new_df])
     else:
-        combined=new_df
+        combined = new_df
 
-    combined.to_csv("sent_jobs.csv",index=False)
+    combined.to_csv("sent_jobs.csv", index=False)
+
 
 print("Job alerts sent successfully.")
-
-
-
-
-
-
