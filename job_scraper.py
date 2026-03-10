@@ -23,7 +23,7 @@ def scrape_wellfound_jobs():
 
         listings = soup.find_all("a", {"data-test": "job-link"})
 
-        for job in listings[:20]:
+        for job in listings[:10]:
 
             title = job.text.strip()
             link = "https://wellfound.com" + job.get("href")
@@ -354,4 +354,5 @@ if new_jobs:
 
 
 print("Job alerts sent successfully.")
+
 
