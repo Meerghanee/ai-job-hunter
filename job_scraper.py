@@ -72,6 +72,39 @@ def scrape_naukri_jobs():
     return jobs
 
 
+# GREENHOUSE ATS SCRAPER
+def scrape_greenhouse_jobs():
+
+    url = "https://boards.greenhouse.io/embed/job_board?for=stripe"
+    jobs = []
+
+    try:
+
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        listings = soup.find_all("a")
+
+        for job in listings[:20]:
+
+            title = job.text.strip()
+            link = job.get("href")
+
+            if link and "greenhouse.io" in link:
+
+                jobs.append({
+                    "Company": "Startup",
+                    "Job Role": title,
+                    "Apply Link": link,
+                    "Source": "Greenhouse"
+                })
+
+    except:
+        pass
+
+    return jobs
+
+
 # JOB ROLES
 roles = [
     "data analyst",
@@ -168,7 +201,7 @@ else:
 new_jobs = []
 
 
-# SEND TELEGRAM ALERTS FROM MAIN PORTALS
+# TELEGRAM ALERTS FROM MAIN PORTALS
 for index, row in dashboard.iterrows():
 
     if row["Apply Link"] not in sent_links:
@@ -189,7 +222,7 @@ Source: {row['Source']}
         new_jobs.append(row)
 
 
-# SCRAPE WELLFOUND STARTUP JOBS
+# WELLFOUND JOBS
 wellfound_jobs = scrape_wellfound_jobs()
 
 for job in wellfound_jobs:
@@ -214,7 +247,7 @@ Source: {job['Source']}
         new_jobs.append(job)
 
 
-# SCRAPE NAUKRI JOBS
+# NAUKRI JOBS
 naukri_jobs = scrape_naukri_jobs()
 
 for job in naukri_jobs:
@@ -225,6 +258,31 @@ for job in naukri_jobs:
 
         message = f"""
 New Job (Naukri)
+
+Company: {job['Company']}
+Role: {job['Job Role']}
+Apply: {job['Apply Link']}
+Source: {job['Source']}
+"""
+
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+        requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+
+        new_jobs.append(job)
+
+
+# GREENHOUSE JOBS
+greenhouse_jobs = scrape_greenhouse_jobs()
+
+for job in greenhouse_jobs:
+
+    link = job["Apply Link"]
+
+    if link not in sent_links:
+
+        message = f"""
+New Startup Job (Greenhouse)
 
 Company: {job['Company']}
 Role: {job['Job Role']}
