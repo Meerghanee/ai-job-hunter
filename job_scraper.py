@@ -10,6 +10,9 @@ from bs4 import BeautifulSoup
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
+print("BOT TOKEN:", BOT_TOKEN)
+print("CHAT ID:", CHAT_ID)
+
 
 # WELLFOUND STARTUP SCRAPER
 def scrape_wellfound_jobs():
@@ -354,5 +357,6 @@ if new_jobs:
 
 
 print("Job alerts sent successfully.")
+
 
 
