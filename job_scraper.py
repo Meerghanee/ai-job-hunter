@@ -14,10 +14,16 @@ roles = [
     "financial analyst",
     "business analyst",
     "investment analyst",
-    "equity research",
+    "equity research analyst",
     "research analyst",
     "esg analyst",
-    "corporate finance analyst"
+    "corporate finance analyst",
+    "risk analyst",
+    "credit analyst",
+    "valuation analyst",
+    "finance associate",
+    "data science intern",
+    "business analyst intern"
 ]
 
 # LOCATION (INDIA ONLY)
@@ -35,7 +41,7 @@ for role in roles:
         site_name=["linkedin", "indeed", "glassdoor"],
         search_term=role,
         location=location,
-        results_wanted=40,
+        results_wanted=80,
         hours_old=2
     )
 
@@ -49,10 +55,12 @@ exp_keywords = [
     "junior",
     "associate",
     "intern",
+    "trainee",
     "0 year",
     "0-1",
     "0-2",
-    "0-3"
+    "0-3",
+    "fresher"
 ]
 
 filtered_jobs = jobs_df[
@@ -118,6 +126,7 @@ if new_jobs:
     combined.to_csv("sent_jobs.csv",index=False)
 
 print("Job alerts sent successfully.")
+
 
 
 
