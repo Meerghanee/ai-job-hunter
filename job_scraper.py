@@ -32,6 +32,28 @@ headers = {
 }
 
 
+# ENTRY LEVEL DETECTOR
+def detect_job_level(title):
+
+    title = title.lower()
+
+    entry_keywords = [
+        "junior",
+        "associate",
+        "entry",
+        "intern",
+        "trainee",
+        "graduate",
+        "fresher"
+    ]
+
+    for word in entry_keywords:
+        if word in title:
+            return "Entry Level"
+
+    return "Other"
+
+
 # WELLFOUND SCRAPER
 def scrape_wellfound_jobs():
 
@@ -174,11 +196,9 @@ roles = [
     "credit analyst"
 ]
 
-
 location = "India"
 
 print("Starting AI Job Hunter...")
-
 
 all_jobs = []
 
@@ -189,7 +209,7 @@ for role in roles:
         print("Searching:", role)
 
         jobs = scrape_jobs(
-            site_name=["linkedin", "indeed"],   # removed glassdoor
+            site_name=["linkedin", "indeed"],
             search_term=role,
             location=location,
             results_wanted=60,
@@ -247,16 +267,21 @@ for index, row in dashboard.iterrows():
 
     if link not in sent_links:
 
+        level = detect_job_level(row["Job Role"])
+
         message = f"""
 New Job Alert
 
 Company: {row['Company']}
 Role: {row['Job Role']}
+Level: {level}
 Apply: {link}
 Source: {row['Source']}
 """
 
         send_telegram(message)
+
+        sent_links.add(link)   # duplicate protection
 
         new_jobs.append(row)
 
@@ -276,16 +301,21 @@ for job in extra_jobs:
 
     if link not in sent_links:
 
+        level = detect_job_level(job["Job Role"])
+
         message = f"""
 New Job Alert
 
 Company: {job['Company']}
 Role: {job['Job Role']}
+Level: {level}
 Apply: {link}
 Source: {job['Source']}
 """
 
         send_telegram(message)
+
+        sent_links.add(link)   # duplicate protection
 
         new_jobs.append(job)
 
@@ -300,6 +330,8 @@ if new_jobs:
         combined = pd.concat([old_df, new_df])
     else:
         combined = new_df
+
+    combined.drop_duplicates(subset="Apply Link", inplace=True)
 
     combined.to_csv("sent_jobs.csv", index=False)
 
