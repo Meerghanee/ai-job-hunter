@@ -48,7 +48,6 @@ def scrape_naukri_jobs():
     jobs = []
 
     try:
-
         response = requests.get(url)
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -79,7 +78,6 @@ def scrape_greenhouse_jobs():
     jobs = []
 
     try:
-
         response = requests.get(url)
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -97,6 +95,38 @@ def scrape_greenhouse_jobs():
                     "Job Role": title,
                     "Apply Link": link,
                     "Source": "Greenhouse"
+                })
+
+    except:
+        pass
+
+    return jobs
+
+
+# WORKDAY ATS SCRAPER
+def scrape_workday_jobs():
+
+    url = "https://deloitte.wd1.myworkdayjobs.com/External"
+    jobs = []
+
+    try:
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        listings = soup.find_all("a")
+
+        for job in listings[:20]:
+
+            title = job.text.strip()
+            link = job.get("href")
+
+            if link and "myworkdayjobs" in link:
+
+                jobs.append({
+                    "Company": "Workday Company",
+                    "Job Role": title,
+                    "Apply Link": link,
+                    "Source": "Workday"
                 })
 
     except:
@@ -130,6 +160,7 @@ location = "India"
 print("Starting AI Job Hunter for India...")
 
 all_jobs = []
+
 
 # SCRAPE MAIN JOB PORTALS
 for role in roles:
@@ -223,13 +254,9 @@ Source: {row['Source']}
 
 
 # WELLFOUND JOBS
-wellfound_jobs = scrape_wellfound_jobs()
+for job in scrape_wellfound_jobs():
 
-for job in wellfound_jobs:
-
-    link = job["Apply Link"]
-
-    if link not in sent_links:
+    if job["Apply Link"] not in sent_links:
 
         message = f"""
 New Startup Job
@@ -240,21 +267,18 @@ Apply: {job['Apply Link']}
 Source: {job['Source']}
 """
 
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-
-        requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            data={"chat_id": CHAT_ID, "text": message}
+        )
 
         new_jobs.append(job)
 
 
 # NAUKRI JOBS
-naukri_jobs = scrape_naukri_jobs()
+for job in scrape_naukri_jobs():
 
-for job in naukri_jobs:
-
-    link = job["Apply Link"]
-
-    if link not in sent_links:
+    if job["Apply Link"] not in sent_links:
 
         message = f"""
 New Job (Naukri)
@@ -265,21 +289,18 @@ Apply: {job['Apply Link']}
 Source: {job['Source']}
 """
 
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-
-        requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            data={"chat_id": CHAT_ID, "text": message}
+        )
 
         new_jobs.append(job)
 
 
 # GREENHOUSE JOBS
-greenhouse_jobs = scrape_greenhouse_jobs()
+for job in scrape_greenhouse_jobs():
 
-for job in greenhouse_jobs:
-
-    link = job["Apply Link"]
-
-    if link not in sent_links:
+    if job["Apply Link"] not in sent_links:
 
         message = f"""
 New Startup Job (Greenhouse)
@@ -290,9 +311,32 @@ Apply: {job['Apply Link']}
 Source: {job['Source']}
 """
 
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            data={"chat_id": CHAT_ID, "text": message}
+        )
 
-        requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+        new_jobs.append(job)
+
+
+# WORKDAY JOBS
+for job in scrape_workday_jobs():
+
+    if job["Apply Link"] not in sent_links:
+
+        message = f"""
+New Job (Workday)
+
+Company: {job['Company']}
+Role: {job['Job Role']}
+Apply: {job['Apply Link']}
+Source: {job['Source']}
+"""
+
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            data={"chat_id": CHAT_ID, "text": message}
+        )
 
         new_jobs.append(job)
 
