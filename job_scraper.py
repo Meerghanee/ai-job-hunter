@@ -5,6 +5,9 @@ import os
 from datetime import datetime
 from bs4 import BeautifulSoup
 
+# 🔴 CONTROL SWITCH (CHANGE THIS ONLY)
+SEND_ALERTS = False   # False = STOP | True = START
+
 # TELEGRAM SETTINGS
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -12,7 +15,12 @@ CHAT_ID = os.getenv("CHAT_ID")
 print("BOT TOKEN:", BOT_TOKEN)
 print("CHAT ID:", CHAT_ID)
 
+
 def send_telegram(message):
+
+    if not SEND_ALERTS:
+        return   # 🚫 Stops all messages
+
     try:
         requests.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
@@ -56,19 +64,15 @@ def detect_job_level(title):
 
 # WELLFOUND SCRAPER
 def scrape_wellfound_jobs():
-
     jobs = []
-
     try:
         url = "https://wellfound.com/jobs"
-
         response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
 
         listings = soup.find_all("a", {"data-test": "job-link"})
 
         for job in listings[:10]:
-
             title = job.text.strip()
             link = "https://wellfound.com" + job.get("href")
 
@@ -78,7 +82,6 @@ def scrape_wellfound_jobs():
                 "Apply Link": link,
                 "Source": "Wellfound"
             })
-
     except:
         pass
 
@@ -87,19 +90,15 @@ def scrape_wellfound_jobs():
 
 # NAUKRI SCRAPER
 def scrape_naukri_jobs():
-
     jobs = []
-
     try:
         url = "https://www.naukri.com/data-analyst-jobs-in-india"
-
         response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
 
         listings = soup.find_all("a", class_="title")
 
         for job in listings[:15]:
-
             title = job.text.strip()
             link = job.get("href")
 
@@ -109,7 +108,6 @@ def scrape_naukri_jobs():
                 "Apply Link": link,
                 "Source": "Naukri"
             })
-
     except:
         pass
 
@@ -118,31 +116,25 @@ def scrape_naukri_jobs():
 
 # GREENHOUSE SCRAPER
 def scrape_greenhouse_jobs():
-
     jobs = []
-
     try:
         url = "https://boards.greenhouse.io/embed/job_board?for=stripe"
-
         response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
 
         listings = soup.find_all("a")
 
         for job in listings[:15]:
-
             title = job.text.strip()
             link = job.get("href")
 
             if link and "greenhouse.io" in link:
-
                 jobs.append({
                     "Company": "Startup",
                     "Job Role": title,
                     "Apply Link": link,
                     "Source": "Greenhouse"
                 })
-
     except:
         pass
 
@@ -151,31 +143,25 @@ def scrape_greenhouse_jobs():
 
 # WORKDAY SCRAPER
 def scrape_workday_jobs():
-
     jobs = []
-
     try:
         url = "https://deloitte.wd1.myworkdayjobs.com/External"
-
         response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
 
         listings = soup.find_all("a")
 
         for job in listings[:15]:
-
             title = job.text.strip()
             link = job.get("href")
 
             if link and "myworkdayjobs" in link:
-
                 jobs.append({
                     "Company": "Workday Company",
                     "Job Role": title,
                     "Apply Link": link,
                     "Source": "Workday"
                 })
-
     except:
         pass
 
@@ -203,9 +189,7 @@ print("Starting AI Job Hunter...")
 all_jobs = []
 
 for role in roles:
-
     try:
-
         print("Searching:", role)
 
         jobs = scrape_jobs(
@@ -218,7 +202,6 @@ for role in roles:
 
         if not jobs.empty:
             all_jobs.append(jobs)
-
     except:
         pass
 
@@ -231,7 +214,6 @@ else:
 
 
 if not jobs_df.empty:
-
     dashboard = pd.DataFrame({
         "Company": jobs_df["company"],
         "Job Role": jobs_df["title"],
@@ -239,7 +221,6 @@ if not jobs_df.empty:
         "Apply Link": jobs_df["job_url"],
         "Source": jobs_df["site"]
     })
-
 else:
     dashboard = pd.DataFrame()
 
@@ -281,8 +262,7 @@ Source: {row['Source']}
 
         send_telegram(message)
 
-        sent_links.add(link)   # duplicate protection
-
+        sent_links.add(link)
         new_jobs.append(row)
 
 
@@ -315,8 +295,7 @@ Source: {job['Source']}
 
         send_telegram(message)
 
-        sent_links.add(link)   # duplicate protection
-
+        sent_links.add(link)
         new_jobs.append(job)
 
 
@@ -332,7 +311,6 @@ if new_jobs:
         combined = new_df
 
     combined.drop_duplicates(subset="Apply Link", inplace=True)
-
     combined.to_csv("sent_jobs.csv", index=False)
 
 
